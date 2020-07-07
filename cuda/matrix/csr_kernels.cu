@@ -635,16 +635,17 @@ void spgeam(std::shared_ptr<const DefaultExecutor> exec,
     auto total_nnz =
         a->get_num_stored_elements() + b->get_num_stored_elements();
     auto nnz_per_row = total_nnz / a->get_size()[0];
-    select_spgeam(spgeam_kernels(),
-                  [&](int compiled_subwarp_size) {
-                      return compiled_subwarp_size >= nnz_per_row ||
-                             compiled_subwarp_size == config::warp_size;
-                  },
-                  syn::value_list<int>(), syn::type_list<>(), exec,
-                  alpha->get_const_values(), a->get_const_row_ptrs(),
-                  a->get_const_col_idxs(), a->get_const_values(),
-                  beta->get_const_values(), b->get_const_row_ptrs(),
-                  b->get_const_col_idxs(), b->get_const_values(), c);
+    select_spgeam(
+        spgeam_kernels(),
+        [&](int compiled_subwarp_size) {
+            return compiled_subwarp_size >= nnz_per_row ||
+                   compiled_subwarp_size == config::warp_size;
+        },
+        syn::value_list<int>(), syn::type_list<>(), exec,
+        alpha->get_const_values(), a->get_const_row_ptrs(),
+        a->get_const_col_idxs(), a->get_const_values(),
+        beta->get_const_values(), b->get_const_row_ptrs(),
+        b->get_const_col_idxs(), b->get_const_values(), c);
 }
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(GKO_DECLARE_CSR_SPGEAM_KERNEL);
@@ -1099,6 +1100,23 @@ void is_sorted_by_column_index(
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(
     GKO_DECLARE_CSR_IS_SORTED_BY_COLUMN_INDEX);
+
+
+template <typename ValueType, typename IndexType>
+void scale(std::shared_ptr<const CudaExecutor> exec,
+           const matrix::Dense<ValueType> *alpha,
+           matrix::Csr<ValueType, IndexType> *to_scale)
+{
+    const auto nnz = to_scale->get_num_stored_elements();
+    const auto grid_dim = ceildiv(nnz, default_block_size);
+    const auto alpha_values = alpha->get_const_values();
+    auto values = to_scale->get_values();
+
+    kernel::scale<<<grid_dim, default_block_size>>>(
+        nnz, as_cuda_type(alpha_values), as_cuda_type(values));
+}
+
+GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(GKO_DECLARE_CSR_SCALE_KERNEL);
 
 
 }  // namespace csr

@@ -342,14 +342,15 @@ void spgeam(std::shared_ptr<const ReferenceExecutor> exec,
     auto c_col_idxs = c_col_idxs_array.get_data();
     auto c_vals = c_vals_array.get_data();
 
-    abstract_spgeam(a, b, [&](IndexType row) { return c_row_ptrs[row]; },
-                    [&](IndexType, IndexType col, ValueType a_val,
-                        ValueType b_val, IndexType &nz) {
-                        c_vals[nz] = valpha * a_val + vbeta * b_val;
-                        c_col_idxs[nz] = col;
-                        ++nz;
-                    },
-                    [](IndexType, IndexType) {});
+    abstract_spgeam(
+        a, b, [&](IndexType row) { return c_row_ptrs[row]; },
+        [&](IndexType, IndexType col, ValueType a_val, ValueType b_val,
+            IndexType &nz) {
+            c_vals[nz] = valpha * a_val + vbeta * b_val;
+            c_col_idxs[nz] = col;
+            ++nz;
+        },
+        [](IndexType, IndexType) {});
 }
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(GKO_DECLARE_CSR_SPGEAM_KERNEL);
@@ -880,6 +881,22 @@ void is_sorted_by_column_index(
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(
     GKO_DECLARE_CSR_IS_SORTED_BY_COLUMN_INDEX);
+
+
+template <typename ValueType, typename IndexType>
+void scale(std::shared_ptr<const ReferenceExecutor> exec,
+           const matrix::Dense<ValueType> *alpha,
+           matrix::Csr<ValueType, IndexType> *to_scale)
+{
+    const auto nnz = to_scale->get_num_stored_elements();
+    auto values = to_scale->get_values();
+
+    for (size_type idx = 0; idx < nnz; idx++) {
+        values[idx] *= alpha->at(0, 0);
+    }
+}
+
+GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(GKO_DECLARE_CSR_SCALE_KERNEL);
 
 
 }  // namespace csr

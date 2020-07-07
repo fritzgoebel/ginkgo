@@ -699,6 +699,8 @@ public:
      */
     void sort_by_column_index();
 
+    void scale(const Dense<ValueType> *alpha);
+
     /*
      * Tests if all row entry pairs (value, col_idx) are sorted by column index
      *
