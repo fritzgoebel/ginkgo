@@ -122,7 +122,9 @@ void Idr<ValueType>::apply_impl(const LinOp *b, LinOp *x) const
 
     auto c = Vector::create(exec, gko::dim<2>{subspace_dim_, nrhs});
     auto omega = Vector::create(exec, gko::dim<2>{1, nrhs});
-    gko::fill_array(exec, omega->get_values(), nrhs, one<ValueType>());
+    exec->run(
+        idr::make_fill_array(omega->get_values(), nrhs, one<ValueType>()));
+    auto rho = Vector::create_with_config_of(omega.get());
 
     auto residual_norm = NormVector::create(exec, dim<2>{1, nrhs});
 
@@ -135,6 +137,10 @@ void Idr<ValueType>::apply_impl(const LinOp *b, LinOp *x) const
     system_matrix_->apply(neg_one_op.get(), dense_x, one_op.get(),
                           residual.get());
     v->copy_from(residual.get());
+
+    auto stop_criterion = stop_criterion_factory_->generate(
+        system_matrix_, std::shared_ptr<const LinOp>(b, [](const LinOp *) {}),
+        x, residual.get());
 
     while (true) {
         ++total_iter;
@@ -150,21 +156,31 @@ void Idr<ValueType>::apply_impl(const LinOp *b, LinOp *x) const
         subspace_vectors_->apply(residual.get(), f.get());
 
         for (size_type k = 0; k < subspace_dim_; k++) {
-            exec->run(make_step_1(m.get(), f.get(), c.get(), v.get(), residual.get(), g.get());
+            exec->run(idr::make_step_1(k, m.get(), f.get(), residual.get(),
+                                       g.get(), c.get(), v.get(),
+                                       &stop_status));
             // c = M \ f = (c_1, ..., c_s)^T
             // v = residual - c_k * g_k - ... - c_s * g_s
 
             get_preconditioner()->apply(v.get(), preconditioned_vector.get());
 
-            exec->run(make_step_2(u.get(), c.get(), preconditioned_vector.get()));
-            //u_k = omega * preconditioned_vector + c_k * u_k + ... + c_s * u_s
+            exec->run(idr::make_step_2(k, omega.get(),
+                                       preconditioned_vector.get(), c.get(),
+                                       u.get(), &stop_status));
+            // u_k = omega * preconditioned_vector + c_k * u_k + ... + c_s * u_s
 
-            auto u_k = u->create_submatrix(span{0, problem_size}, span{k * subspace_dim_ * nrhs, (k + 1) * subspace_dim_ * nrhs});
-            auto g_k = g->create_submatrix(span{0, problem_size}, span{k * subspace_dim_ * nrhs, (k + 1) * subspace_dim_ * nrhs});
+            auto u_k = u->create_submatrix(
+                span{0, problem_size},
+                span{k * subspace_dim_ * nrhs, (k + 1) * subspace_dim_ * nrhs});
+            auto g_k = g->create_submatrix(
+                span{0, problem_size},
+                span{k * subspace_dim_ * nrhs, (k + 1) * subspace_dim_ * nrhs});
 
             system_matrix_->apply(u_k.get(), g_k.get());
 
-            exec->run(make_step_3(subspace_vectors_.get(), g.get(), u.get(), m.get(), f.get(), c.get(), residual.get(), dense_x));
+            exec->run(idr::make_step_3(k, subspace_vectors_.get(), g.get(),
+                                       u.get(), m.get(), f.get(),
+                                       residual.get(), dense_x, &stop_status));
             // for i = 1 to k - 1 do
             //     alpha = p^H_i * g_k / m_i,i
             //     g_k -= alpha * g_i
@@ -181,10 +197,14 @@ void Idr<ValueType>::apply_impl(const LinOp *b, LinOp *x) const
 
         get_preconditioner()->apply(residual.get(),
                                     preconditioned_vector.get());
-        system_matrix->apply(preconditioned_vector.get(), t.get());
+        system_matrix_->apply(preconditioned_vector.get(), t.get());
 
-        exec->run(make_step_4(kappa_, omega.get(), t.get(), residual.get(),
-                              residual_norm.get(), v.get(), dense_x));
+        t->compute_dot(residual.get(), omega.get());
+        rho->copy_from(omega.get());
+
+        exec->run(idr::make_step_4(kappa_, t.get(), v.get(), residual.get(),
+                                   omega.get(), residual_norm.get(), dense_x,
+                                   &stop_status));
         // omega = (t^H * residual) / (t^H * t)
         // rho = (t^H * residual) / (norm(t) * norm(residual))
         // if abs(rho) < kappa then

@@ -57,12 +57,12 @@ constexpr int default_block_size = 512;
 
 
 template <typename ValueType>
-void step_1(std::shared_ptr<const CudaExecutor> exec,
-            const matrix::Dense<ValueType> *m, matrix::Dense<ValueType> *f,
-            const matrix::Dense<ValueType> *c,
-            const matrix::Dense<ValueType> *v,
+void step_1(std::shared_ptr<const CudaExecutor> exec, const size_type k,
+            const matrix::Dense<ValueType> *m,
+            const matrix::Dense<ValueType> *f,
             const matrix::Dense<ValueType> *residual,
-            const matrix::Dense<ValueType> *g,
+            const matrix::Dense<ValueType> *g, matrix::Dense<ValueType> *c,
+            matrix::Dense<ValueType> *v,
             const Array<stopping_status> *stop_status) GKO_NOT_IMPLEMENTED;
 //{
 // TODO (script:idr): change the code imported from solver/bicgstab if needed
@@ -85,9 +85,10 @@ GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_IDR_STEP_1_KERNEL);
 
 
 template <typename ValueType>
-void step_2(std::shared_ptr<const CudaExecutor> exec,
-            const matrix::Dense<ValueType> *u, matrix::Dense<ValueType> *c,
+void step_2(std::shared_ptr<const CudaExecutor> exec, const size_type k,
+            const matrix::Dense<ValueType> *omega,
             const matrix::Dense<ValueType> *preconditioned_vector,
+            const matrix::Dense<ValueType> *c, matrix::Dense<ValueType> *u,
             const Array<stopping_status> *stop_status) GKO_NOT_IMPLEMENTED;
 //{
 // TODO (script:idr): change the code imported from solver/bicgstab if needed
@@ -109,14 +110,11 @@ GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_IDR_STEP_2_KERNEL);
 
 
 template <typename ValueType>
-void step_3(std::shared_ptr<const CudaExecutor> exec,
-            matrix::Dense<ValueType> *p, matrix::Dense<ValueType> *g,
-            const matrix::Dense<ValueType> *u,
-            const matrix::Dense<ValueType> *m,
-            const matrix::Dense<ValueType> *f,
-            const matrix::Dense<ValueType> *c,
-            const matrix::Dense<ValueType> *residual,
-            const matrix::Dense<ValueType> *x,
+void step_3(std::shared_ptr<const CudaExecutor> exec, const size_type k,
+            const matrix::Dense<ValueType> *p, matrix::Dense<ValueType> *g,
+            matrix::Dense<ValueType> *u, matrix::Dense<ValueType> *m,
+            matrix::Dense<ValueType> *f, matrix::Dense<ValueType> *residual,
+            matrix::Dense<ValueType> *x,
             const Array<stopping_status> *stop_status) GKO_NOT_IMPLEMENTED;
 //{
 // TODO (script:idr): change the code imported from solver/bicgstab if needed
@@ -142,11 +140,13 @@ GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_IDR_STEP_3_KERNEL);
 
 
 template <typename ValueType>
-void step_4(std::shared_ptr<const CudaExecutor> exec, const ValueType kappa,
-            matrix::Dense<ValueType> *omega, const matrix::Dense<ValueType> *t,
-            const matrix::Dense<ValueType> *residual,
-            matrix::Dense<ValueType> *residual_norm,
-            const matrix::Dense<ValueType> *v, matrix::Dense<ValueType> *x,
+void step_4(std::shared_ptr<const CudaExecutor> exec,
+            const remove_complex<ValueType> kappa,
+            const matrix::Dense<ValueType> *t,
+            const matrix::Dense<ValueType> *v, matrix::Dense<ValueType> *omega,
+            matrix::Dense<ValueType> *residual,
+            matrix::Dense<remove_complex<ValueType>> *residual_norm,
+            matrix::Dense<ValueType> *x,
             Array<stopping_status> *stop_status) GKO_NOT_IMPLEMENTED;
 //{
 // TODO (script:idr): change the code imported from solver/bicgstab if needed

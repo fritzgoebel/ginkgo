@@ -46,39 +46,39 @@ namespace kernels {
 namespace idr {
 
 
-#define GKO_DECLARE_IDR_STEP_1_KERNEL(_type)                                  \
-    void step_1(std::shared_ptr<const DefaultExecutor> exec,                  \
-                const matrix::Dense<_type> *m, matrix::Dense<_type> *f,       \
-                const matrix::Dense<_type> *c, const matrix::Dense<_type> *v, \
-                const matrix::Dense<_type> *residual,                         \
-                const matrix::Dense<_type> *g,                                \
-                const Array<stopping_status> *stop_status)
+#define GKO_DECLARE_IDR_STEP_1_KERNEL(_type)                                 \
+    void step_1(                                                             \
+        std::shared_ptr<const DefaultExecutor> exec, const size_type k,      \
+        const matrix::Dense<_type> *m, const matrix::Dense<_type> *f,        \
+        const matrix::Dense<_type> *residual, const matrix::Dense<_type> *g, \
+        matrix::Dense<_type> *c, matrix::Dense<_type> *v,                    \
+        const Array<stopping_status> *stop_status)
 
 
 #define GKO_DECLARE_IDR_STEP_2_KERNEL(_type)                            \
     void step_2(std::shared_ptr<const DefaultExecutor> exec,            \
-                const matrix::Dense<_type> *u, matrix::Dense<_type> *c, \
+                const size_type k, const matrix::Dense<_type> *omega,   \
                 const matrix::Dense<_type> *preconditioned_vector,      \
+                const matrix::Dense<_type> *c, matrix::Dense<_type> *u, \
                 const Array<stopping_status> *stop_status)
 
 
-#define GKO_DECLARE_IDR_STEP_3_KERNEL(_type)                                  \
-    void step_3(std::shared_ptr<const DefaultExecutor> exec,                  \
-                matrix::Dense<_type> *p, matrix::Dense<_type> *g,             \
-                const matrix::Dense<_type> *u, const matrix::Dense<_type> *m, \
-                const matrix::Dense<_type> *f, const matrix::Dense<_type> *c, \
-                const matrix::Dense<_type> *residual,                         \
-                const matrix::Dense<_type> *x,                                \
+#define GKO_DECLARE_IDR_STEP_3_KERNEL(_type)                             \
+    void step_3(std::shared_ptr<const DefaultExecutor> exec,             \
+                const size_type k, const matrix::Dense<_type> *p,        \
+                matrix::Dense<_type> *g, matrix::Dense<_type> *u,        \
+                matrix::Dense<_type> *m, matrix::Dense<_type> *f,        \
+                matrix::Dense<_type> *residual, matrix::Dense<_type> *x, \
                 const Array<stopping_status> *stop_status)
 
 
-#define GKO_DECLARE_IDR_STEP_4_KERNEL(_type)                                \
-    void step_4(                                                            \
-        std::shared_ptr<const DefaultExecutor> exec, const _type kappa,     \
-        matrix::Dense<_type> *omega, const matrix::Dense<_type> *t,         \
-        const matrix::Dense<_type> *residual,                               \
-        matrix::Dense<_type> *residual_norm, const matrix::Dense<_type> *v, \
-        matrix::Dense<_type> *x, Array<stopping_status> *stop_status)
+#define GKO_DECLARE_IDR_STEP_4_KERNEL(_type)                                  \
+    void step_4(std::shared_ptr<const DefaultExecutor> exec,                  \
+                const remove_complex<_type> kappa,                            \
+                const matrix::Dense<_type> *t, const matrix::Dense<_type> *v, \
+                matrix::Dense<_type> *omega, matrix::Dense<_type> *residual,  \
+                matrix::Dense<remove_complex<_type>> *residual_norm,          \
+                matrix::Dense<_type> *x, Array<stopping_status> *stop_status)
 
 
 #define GKO_DECLARE_ALL_AS_TEMPLATES          \
