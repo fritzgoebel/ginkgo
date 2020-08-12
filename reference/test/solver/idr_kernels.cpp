@@ -72,6 +72,7 @@ protected:
                       gko::stop::ResidualNormReduction<value_type>::build()
                           .with_reduction_factor(r<value_type>::value)
                           .on(exec))
+                  .with_subspace_dim(4u)
                   .on(exec)),
           idr_factory_precision(
               Solver::build()
@@ -84,6 +85,7 @@ protected:
                       gko::stop::ResidualNormReduction<value_type>::build()
                           .with_reduction_factor(r<value_type>::value)
                           .on(exec))
+                  .with_subspace_dim(4u)
                   .on(exec))
     {}
 
@@ -97,41 +99,37 @@ TYPED_TEST_CASE(Idr, gko::test::ValueTypes);
 
 
 TYPED_TEST(Idr, SolvesDenseSystem)
-GKO_NOT_IMPLEMENTED;
-//{
-// TODO (script:idr): change the code imported from solver/bicgstab if needed
-//    using Mtx = typename TestFixture::Mtx;
-//    using value_type = typename TestFixture::value_type;
-//    auto half_tol = std::sqrt(r<value_type>::value);
-//    auto solver = this->idr_factory->generate(this->mtx);
-//    auto b = gko::initialize<Mtx>({-1.0, 3.0, 1.0}, this->exec);
-//    auto x = gko::initialize<Mtx>({0.0, 0.0, 0.0}, this->exec);
-//
-//    solver->apply(b.get(), x.get());
-//
-//    GKO_ASSERT_MTX_NEAR(x, l({-4.0, -1.0, 4.0}), half_tol);
-//}
+{
+    using Mtx = typename TestFixture::Mtx;
+    using value_type = typename TestFixture::value_type;
+    auto half_tol = std::sqrt(r<value_type>::value);
+    auto solver = this->idr_factory->generate(this->mtx);
+    auto b = gko::initialize<Mtx>({-1.0, 3.0, 1.0}, this->exec);
+    auto x = gko::initialize<Mtx>({0.0, 0.0, 0.0}, this->exec);
+
+    solver->apply(b.get(), x.get());
+
+    GKO_ASSERT_MTX_NEAR(x, l({-4.0, -1.0, 4.0}), half_tol);
+}
 
 
 TYPED_TEST(Idr, SolvesMultipleDenseSystems)
-GKO_NOT_IMPLEMENTED;
-//{
-// TODO (script:idr): change the code imported from solver/bicgstab if needed
-//    using Mtx = typename TestFixture::Mtx;
-//    using value_type = typename TestFixture::value_type;
-//    using T = value_type;
-//    auto half_tol = std::sqrt(r<value_type>::value);
-//    auto solver = this->idr_factory->generate(this->mtx);
-//    auto b = gko::initialize<Mtx>(
-//        {I<T>{-1.0, -5.0}, I<T>{3.0, 1.0}, I<T>{1.0, -2.0}}, this->exec);
-//    auto x = gko::initialize<Mtx>(
-//        {I<T>{0.0, 0.0}, I<T>{0.0, 0.0}, I<T>{0.0, 0.0}}, this->exec);
-//
-//    solver->apply(b.get(), x.get());
-//
-//    GKO_ASSERT_MTX_NEAR(x, l({{-4.0, 1.0}, {-1.0, 2.0}, {4.0, -1.0}}),
-//                        half_tol);
-//}
+{
+    using Mtx = typename TestFixture::Mtx;
+    using value_type = typename TestFixture::value_type;
+    using T = value_type;
+    auto half_tol = std::sqrt(r<value_type>::value);
+    auto solver = this->idr_factory->generate(this->mtx);
+    auto b = gko::initialize<Mtx>(
+        {I<T>{-1.0, -5.0}, I<T>{3.0, 1.0}, I<T>{1.0, -2.0}}, this->exec);
+    auto x = gko::initialize<Mtx>(
+        {I<T>{0.0, 0.0}, I<T>{0.0, 0.0}, I<T>{0.0, 0.0}}, this->exec);
+
+    solver->apply(b.get(), x.get());
+
+    GKO_ASSERT_MTX_NEAR(x, l({{-4.0, 1.0}, {-1.0, 2.0}, {4.0, -1.0}}),
+                        half_tol);
+}
 
 
 TYPED_TEST(Idr, SolvesDenseSystemUsingAdvancedApply)
@@ -180,63 +178,59 @@ GKO_NOT_IMPLEMENTED;
 
 // The following test-data was generated and validated with MATLAB
 TYPED_TEST(Idr, SolvesBigDenseSystemForDivergenceCheck1)
-GKO_NOT_IMPLEMENTED;
-//{
-// TODO (script:idr): change the code imported from solver/bicgstab if needed
-//    using Mtx = typename TestFixture::Mtx;
-//    using value_type = typename TestFixture::value_type;
-//    auto half_tol = std::sqrt(r<value_type>::value);
-//    std::shared_ptr<Mtx> locmtx =
-//        gko::initialize<Mtx>({{-19.0, 47.0, -41.0, 35.0, -21.0, 71.0},
-//                              {-8.0, -66.0, 29.0, -96.0, -95.0, -14.0},
-//                              {-93.0, -58.0, -9.0, -87.0, 15.0, 35.0},
-//                              {60.0, -86.0, 54.0, -40.0, -93.0, 56.0},
-//                              {53.0, 94.0, -54.0, 86.0, -61.0, 4.0},
-//                              {-42.0, 57.0, 32.0, 89.0, 89.0, -39.0}},
-//                             this->exec);
-//    auto solver = this->idr_factory_precision->generate(locmtx);
-//    auto b =
-//        gko::initialize<Mtx>({0.0, -9.0, -2.0, 8.0, -5.0, -6.0}, this->exec);
-//    auto x = gko::initialize<Mtx>({0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, this->exec);
-//
-//    solver->apply(b.get(), x.get());
-//
-//    GKO_ASSERT_MTX_NEAR(
-//        x,
-//        l({0.13853406350816114, -0.08147485210505287, -0.0450299311807042,
-//           -0.0051264177562865719, 0.11609654300797841, 0.1018688746740561}),
-//        half_tol * 5e-1);
-//}
+{
+    using Mtx = typename TestFixture::Mtx;
+    using value_type = typename TestFixture::value_type;
+    auto half_tol = std::sqrt(r<value_type>::value);
+    std::shared_ptr<Mtx> locmtx =
+        gko::initialize<Mtx>({{-19.0, 47.0, -41.0, 35.0, -21.0, 71.0},
+                              {-8.0, -66.0, 29.0, -96.0, -95.0, -14.0},
+                              {-93.0, -58.0, -9.0, -87.0, 15.0, 35.0},
+                              {60.0, -86.0, 54.0, -40.0, -93.0, 56.0},
+                              {53.0, 94.0, -54.0, 86.0, -61.0, 4.0},
+                              {-42.0, 57.0, 32.0, 89.0, 89.0, -39.0}},
+                             this->exec);
+    auto solver = this->idr_factory_precision->generate(locmtx);
+    auto b =
+        gko::initialize<Mtx>({0.0, -9.0, -2.0, 8.0, -5.0, -6.0}, this->exec);
+    auto x = gko::initialize<Mtx>({0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, this->exec);
+
+    solver->apply(b.get(), x.get());
+
+    GKO_ASSERT_MTX_NEAR(
+        x,
+        l({0.13853406350816114, -0.08147485210505287, -0.0450299311807042,
+           -0.0051264177562865719, 0.11609654300797841, 0.1018688746740561}),
+        half_tol * 5e-1);
+}
 
 
 TYPED_TEST(Idr, SolvesBigDenseSystemForDivergenceCheck2)
-GKO_NOT_IMPLEMENTED;
-//{
-// TODO (script:idr): change the code imported from solver/bicgstab if needed
-//    using Mtx = typename TestFixture::Mtx;
-//    using value_type = typename TestFixture::value_type;
-//    auto half_tol = std::sqrt(r<value_type>::value);
-//    std::shared_ptr<Mtx> locmtx =
-//        gko::initialize<Mtx>({{-19.0, 47.0, -41.0, 35.0, -21.0, 71.0},
-//                              {-8.0, -66.0, 29.0, -96.0, -95.0, -14.0},
-//                              {-93.0, -58.0, -9.0, -87.0, 15.0, 35.0},
-//                              {60.0, -86.0, 54.0, -40.0, -93.0, 56.0},
-//                              {53.0, 94.0, -54.0, 86.0, -61.0, 4.0},
-//                              {-42.0, 57.0, 32.0, 89.0, 89.0, -39.0}},
-//                             this->exec);
-//    auto solver = this->idr_factory_precision->generate(locmtx);
-//    auto b =
-//        gko::initialize<Mtx>({9.0, -4.0, -6.0, -10.0, 1.0, 10.0}, this->exec);
-//    auto x = gko::initialize<Mtx>({0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, this->exec);
-//
-//    solver->apply(b.get(), x.get());
-//
-//    GKO_ASSERT_MTX_NEAR(
-//        x,
-//        l({0.13517641417299162, 0.75117689075221139, 0.47572853185155239,
-//           -0.50927993095367852, 0.13463333820848167, 0.23126768306576015}),
-//        half_tol * 1e-1);
-//}
+{
+    using Mtx = typename TestFixture::Mtx;
+    using value_type = typename TestFixture::value_type;
+    auto half_tol = std::sqrt(r<value_type>::value);
+    std::shared_ptr<Mtx> locmtx =
+        gko::initialize<Mtx>({{-19.0, 47.0, -41.0, 35.0, -21.0, 71.0},
+                              {-8.0, -66.0, 29.0, -96.0, -95.0, -14.0},
+                              {-93.0, -58.0, -9.0, -87.0, 15.0, 35.0},
+                              {60.0, -86.0, 54.0, -40.0, -93.0, 56.0},
+                              {53.0, 94.0, -54.0, 86.0, -61.0, 4.0},
+                              {-42.0, 57.0, 32.0, 89.0, 89.0, -39.0}},
+                             this->exec);
+    auto solver = this->idr_factory_precision->generate(locmtx);
+    auto b =
+        gko::initialize<Mtx>({9.0, -4.0, -6.0, -10.0, 1.0, 10.0}, this->exec);
+    auto x = gko::initialize<Mtx>({0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, this->exec);
+
+    solver->apply(b.get(), x.get());
+
+    GKO_ASSERT_MTX_NEAR(
+        x,
+        l({0.13517641417299162, 0.75117689075221139, 0.47572853185155239,
+           -0.50927993095367852, 0.13463333820848167, 0.23126768306576015}),
+        half_tol * 1e-1);
+}
 
 
 template <typename T>

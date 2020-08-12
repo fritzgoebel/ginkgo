@@ -53,6 +53,28 @@ namespace idr {
 
 
 template <typename ValueType>
+void initialize(std::shared_ptr<const ReferenceExecutor> exec,
+                matrix::Dense<ValueType> *m, matrix::Dense<ValueType> *g)
+{
+    const auto nrhs = m->get_size()[1] / m->get_size()[0];
+    for (size_type row = 0; row < m->get_size()[0]; row++) {
+        for (size_type col = 0; col < m->get_size()[1]; col++) {
+            m->at(row, col) =
+                (row == col / nrhs) ? one<ValueType>() : zero<ValueType>();
+        }
+    }
+
+    for (auto row = 0; row < g->get_size()[0]; row++) {
+        for (auto col = 0; col < g->get_size()[1]; col++) {
+            g->at(row, col) = zero<ValueType>();
+        }
+    }
+}
+
+GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_IDR_INITIALIZE_KERNEL);
+
+
+template <typename ValueType>
 void step_1(std::shared_ptr<const ReferenceExecutor> exec, const size_type k,
             const matrix::Dense<ValueType> *m,
             const matrix::Dense<ValueType> *f,
@@ -102,7 +124,7 @@ void step_2(std::shared_ptr<const ReferenceExecutor> exec, const size_type k,
             for (size_type j = k; j < c->get_size()[0]; j++) {
                 temp += c->at(j, i) * u->at(row, j * nrhs + i);
             }
-            u->at(row, k * nrhs + i);
+            u->at(row, k * nrhs + i) = temp;
         }
     }
 }
@@ -148,9 +170,11 @@ void step_3(std::shared_ptr<const ReferenceExecutor> exec, const size_type k,
             x->at(row, i) += beta * u->at(row, k * nrhs + i);
         }
 
-        f->at(k, i) = zero<ValueType>();
-        for (size_type j = k + 1; j < f->get_size()[0]; j++) {
-            f->at(j, i) -= beta * m->at(j, k * nrhs + i);
+        if (k + 1 < f->get_size()[0]) {
+            f->at(k, i) = zero<ValueType>();
+            for (size_type j = k + 1; j < f->get_size()[0]; j++) {
+                f->at(j, i) -= beta * m->at(j, k * nrhs + i);
+            }
         }
     }
 }
@@ -159,28 +183,28 @@ GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_IDR_STEP_3_KERNEL);
 
 
 template <typename ValueType>
-void step_4(std::shared_ptr<const ReferenceExecutor> exec,
-            const remove_complex<ValueType> kappa,
-            const matrix::Dense<ValueType> *t,
-            const matrix::Dense<ValueType> *v, matrix::Dense<ValueType> *omega,
-            matrix::Dense<ValueType> *residual,
-            matrix::Dense<remove_complex<ValueType>> *residual_norm,
-            matrix::Dense<ValueType> *x,
-            Array<stopping_status> *stop_status) GKO_NOT_IMPLEMENTED;
-//{
-// TODO (script:idr): change the code imported from solver/bicgstab if needed
-//    const dim3 block_size(default_block_size, 1, 1);
-//    const dim3 grid_size(
-//        ceildiv(y->get_size()[0] * y->get_stride(), block_size.x), 1, 1);
-//
-//    finalize_kernel<<<grid_size, block_size, 0, 0>>>(
-//        y->get_size()[0], y->get_size()[1], y->get_stride(), x->get_stride(),
-//        as_cuda_type(x->get_values()), as_cuda_type(y->get_const_values()),
-//        as_cuda_type(alpha->get_const_values()),
-//        as_cuda_type(stop_status->get_data()));
-//}
+void compute_omega(
+    std::shared_ptr<const ReferenceExecutor> exec,
+    const remove_complex<ValueType> kappa,
+    const matrix::Dense<remove_complex<ValueType>> *t_norm,
+    const matrix::Dense<remove_complex<ValueType>> *residual_norm,
+    matrix::Dense<ValueType> *rho, matrix::Dense<ValueType> *omega)
+{
+    for (size_type i = 0; i < omega->get_size()[1]; i++) {
+        auto thr = omega->at(0, i);
+        auto normt = t_norm->at(0, i);
+        omega->at(0, i) /= normt * normt;
+        rho->at(0, i) = thr / (normt * residual_norm->at(0, i));
 
-GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_IDR_STEP_4_KERNEL);
+        auto absrho = abs(rho->at(0, i));
+
+        if (absrho < kappa) {
+            omega->at(0, i) *= kappa / absrho;
+        }
+    }
+}
+
+GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_IDR_COMPUTE_OMEGA_KERNEL);
 
 
 }  // namespace idr

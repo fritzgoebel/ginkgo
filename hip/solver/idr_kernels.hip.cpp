@@ -60,6 +60,14 @@ constexpr int default_block_size = 512;
 
 
 template <typename ValueType>
+void initialize(std::shared_ptr<const HipExecutor> exec,
+                matrix::Dense<ValueType> *m,
+                matrix::Dense<ValueType> *g) GKO_NOT_IMPLEMENTED;
+
+GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_IDR_INITIALIZE_KERNEL);
+
+
+template <typename ValueType>
 void step_1(std::shared_ptr<const HipExecutor> exec, const size_type k,
             const matrix::Dense<ValueType> *m,
             const matrix::Dense<ValueType> *f,
@@ -143,14 +151,13 @@ GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_IDR_STEP_3_KERNEL);
 
 
 template <typename ValueType>
-void step_4(std::shared_ptr<const HipExecutor> exec,
-            const remove_complex<ValueType> kappa,
-            const matrix::Dense<ValueType> *t,
-            const matrix::Dense<ValueType> *v, matrix::Dense<ValueType> *omega,
-            matrix::Dense<ValueType> *residual,
-            matrix::Dense<remove_complex<ValueType>> *residual_norm,
-            matrix::Dense<ValueType> *x,
-            Array<stopping_status> *stop_status) GKO_NOT_IMPLEMENTED;
+void compute_omega(
+    std::shared_ptr<const HipExecutor> exec,
+    const remove_complex<ValueType> kappa,
+    const matrix::Dense<remove_complex<ValueType>> *t_norm,
+    const matrix::Dense<remove_complex<ValueType>> *residual_norm,
+    matrix::Dense<ValueType> *rho,
+    matrix::Dense<ValueType> *omega) GKO_NOT_IMPLEMENTED;
 //{
 // TODO (script:idr): change the code imported from solver/bicgstab if needed
 //    const dim3 block_size(default_block_size, 1, 1);
@@ -164,7 +171,7 @@ void step_4(std::shared_ptr<const HipExecutor> exec,
 //        as_cuda_type(stop_status->get_data()));
 //}
 
-GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_IDR_STEP_4_KERNEL);
+GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_IDR_COMPUTE_OMEGA_KERNEL);
 
 
 }  // namespace idr
