@@ -54,9 +54,14 @@ namespace idr {
 
 template <typename ValueType>
 void initialize(std::shared_ptr<const ReferenceExecutor> exec,
-                matrix::Dense<ValueType> *m, matrix::Dense<ValueType> *g)
+                matrix::Dense<ValueType> *m, matrix::Dense<ValueType> *g,
+                Array<stopping_status> *stop_status)
 {
     const auto nrhs = m->get_size()[1] / m->get_size()[0];
+    for (size_type i = 0; i < nrhs; i++) {
+        stop_status->get_data()[i].reset();
+    }
+
     for (size_type row = 0; row < m->get_size()[0]; row++) {
         for (size_type col = 0; col < m->get_size()[1]; col++) {
             m->at(row, col) =
@@ -87,6 +92,10 @@ void step_1(std::shared_ptr<const ReferenceExecutor> exec, const size_type k,
     const auto nrhs = f->get_size()[1];
 
     for (size_type i = 0; i < nrhs; i++) {
+        if (stop_status->get_const_data()[0].has_stopped()) {
+            continue;
+        }
+
         // Compute c = M \ f
         for (size_type row = 0; row < m_size[0]; row++) {
             auto temp = f->at(row, i);
@@ -119,6 +128,10 @@ void step_2(std::shared_ptr<const ReferenceExecutor> exec, const size_type k,
 {
     const auto nrhs = omega->get_size()[1];
     for (size_type i = 0; i < nrhs; i++) {
+        if (stop_status->get_const_data()[0].has_stopped()) {
+            continue;
+        }
+
         for (size_type row = 0; row < u->get_size()[0]; row++) {
             auto temp = omega->at(0, i) * preconditioned_vector->at(row, i);
             for (size_type j = k; j < c->get_size()[0]; j++) {
@@ -143,6 +156,10 @@ void step_3(std::shared_ptr<const ReferenceExecutor> exec, const size_type k,
     const auto nrhs = x->get_size()[1];
 
     for (size_type i = 0; i < nrhs; i++) {
+        if (stop_status->get_const_data()[0].has_stopped()) {
+            continue;
+        }
+
         for (size_type j = 0; j < k; j++) {
             auto alpha = zero<ValueType>();
             for (size_type ind = 0; ind < p->get_size()[1]; ind++) {
@@ -185,15 +202,20 @@ GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_IDR_STEP_3_KERNEL);
 template <typename ValueType>
 void compute_omega(
     std::shared_ptr<const ReferenceExecutor> exec,
-    const remove_complex<ValueType> kappa,
+    const remove_complex<ValueType> kappa, const matrix::Dense<ValueType> *tht,
     const matrix::Dense<remove_complex<ValueType>> *t_norm,
     const matrix::Dense<remove_complex<ValueType>> *residual_norm,
-    matrix::Dense<ValueType> *rho, matrix::Dense<ValueType> *omega)
+    matrix::Dense<ValueType> *rho, matrix::Dense<ValueType> *omega,
+    const Array<stopping_status> *stop_status)
 {
     for (size_type i = 0; i < omega->get_size()[1]; i++) {
+        if (stop_status->get_const_data()[0].has_stopped()) {
+            continue;
+        }
+
         auto thr = omega->at(0, i);
         auto normt = t_norm->at(0, i);
-        omega->at(0, i) /= normt * normt;
+        omega->at(0, i) /= tht->at(0, i);
         rho->at(0, i) = thr / (normt * residual_norm->at(0, i));
 
         auto absrho = abs(rho->at(0, i));

@@ -46,9 +46,10 @@ namespace kernels {
 namespace idr {
 
 
-#define GKO_DECLARE_IDR_INITIALIZE_KERNEL(_type)                 \
-    void initialize(std::shared_ptr<const DefaultExecutor> exec, \
-                    matrix::Dense<_type> *m, matrix::Dense<_type> *g)
+#define GKO_DECLARE_IDR_INITIALIZE_KERNEL(_type)                      \
+    void initialize(std::shared_ptr<const DefaultExecutor> exec,      \
+                    matrix::Dense<_type> *m, matrix::Dense<_type> *g, \
+                    Array<stopping_status> *stop_status)
 
 
 #define GKO_DECLARE_IDR_STEP_1_KERNEL(_type)                                 \
@@ -77,13 +78,14 @@ namespace idr {
                 const Array<stopping_status> *stop_status)
 
 
-#define GKO_DECLARE_IDR_COMPUTE_OMEGA_KERNEL(_type)                \
-    void compute_omega(                                            \
-        std::shared_ptr<const DefaultExecutor> exec,               \
-        const remove_complex<_type> kappa,                         \
-        const matrix::Dense<remove_complex<_type>> *t_norm,        \
-        const matrix::Dense<remove_complex<_type>> *residual_norm, \
-        matrix::Dense<_type> *rho, matrix::Dense<_type> *omega)
+#define GKO_DECLARE_IDR_COMPUTE_OMEGA_KERNEL(_type)                         \
+    void compute_omega(                                                     \
+        std::shared_ptr<const DefaultExecutor> exec,                        \
+        const remove_complex<_type> kappa, const matrix::Dense<_type> *tht, \
+        const matrix::Dense<remove_complex<_type>> *t_norm,                 \
+        const matrix::Dense<remove_complex<_type>> *residual_norm,          \
+        matrix::Dense<_type> *rho, matrix::Dense<_type> *omega,             \
+        const Array<stopping_status> *stop_status)
 
 
 #define GKO_DECLARE_ALL_AS_TEMPLATES              \

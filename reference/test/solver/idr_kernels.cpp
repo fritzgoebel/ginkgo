@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <gtest/gtest.h>
 
+#include <iostream>
 
 #include <ginkgo/core/base/exception.hpp>
 #include <ginkgo/core/base/executor.hpp>
@@ -196,6 +197,18 @@ TYPED_TEST(Idr, SolvesBigDenseSystemForDivergenceCheck1)
     auto x = gko::initialize<Mtx>({0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, this->exec);
 
     solver->apply(b.get(), x.get());
+
+
+    auto one_op = gko::initialize<gko::matrix::Dense<value_type>>(
+        {gko::one<value_type>()}, this->exec);
+    auto neg_one_op = gko::initialize<gko::matrix::Dense<value_type>>(
+        {-gko::one<value_type>()}, this->exec);
+    auto resnorm = gko::matrix::Dense<gko::remove_complex<value_type>>::create(
+        this->exec, gko::dim<2>{1, 1});
+    locmtx->apply(neg_one_op.get(), x.get(), one_op.get(), b.get());
+    b->compute_norm2(resnorm.get());
+
+    std::cout << "RESIDUAL NORM: " << resnorm->at(0, 0) << "\n";
 
     GKO_ASSERT_MTX_NEAR(
         x,

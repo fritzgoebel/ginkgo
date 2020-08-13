@@ -58,8 +58,8 @@ constexpr int default_block_size = 512;
 
 template <typename ValueType>
 void initialize(std::shared_ptr<const CudaExecutor> exec,
-                matrix::Dense<ValueType> *m,
-                matrix::Dense<ValueType> *g) GKO_NOT_IMPLEMENTED;
+                matrix::Dense<ValueType> *m, matrix::Dense<ValueType> *g,
+                Array<stopping_status> *stop_status) GKO_NOT_IMPLEMENTED;
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_IDR_INITIALIZE_KERNEL);
 
@@ -150,11 +150,11 @@ GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_IDR_STEP_3_KERNEL);
 template <typename ValueType>
 void compute_omega(
     std::shared_ptr<const CudaExecutor> exec,
-    const remove_complex<ValueType> kappa,
+    const remove_complex<ValueType> kappa, const matrix::Dense<ValueType> *tht,
     const matrix::Dense<remove_complex<ValueType>> *t_norm,
     const matrix::Dense<remove_complex<ValueType>> *residual_norm,
-    matrix::Dense<ValueType> *rho,
-    matrix::Dense<ValueType> *omega) GKO_NOT_IMPLEMENTED;
+    matrix::Dense<ValueType> *rho, matrix::Dense<ValueType> *omega,
+    const Array<stopping_status> *stop_status) GKO_NOT_IMPLEMENTED;
 //{
 // TODO (script:idr): change the code imported from solver/bicgstab if needed
 //    const dim3 block_size(default_block_size, 1, 1);

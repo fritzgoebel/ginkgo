@@ -130,7 +130,7 @@ void Idr<ValueType>::apply_impl(const LinOp *b, LinOp *x) const
     auto rho = Vector::create_with_config_of(omega.get());
 
     auto residual_norm = NormVector::create(exec, dim<2>{1, nrhs});
-    auto tht = NormVector::create(exec, dim<2>{1, nrhs});
+    auto tht = Vector::create(exec, dim<2>{1, nrhs});
     auto t_norm = NormVector::create(exec, dim<2>{1, nrhs});
 
     int total_iter = -1;
@@ -147,7 +147,7 @@ void Idr<ValueType>::apply_impl(const LinOp *b, LinOp *x) const
         system_matrix_, std::shared_ptr<const LinOp>(b, [](const LinOp *) {}),
         x, residual.get());
 
-    exec->run(idr::make_initialize(m.get(), g.get()));
+    exec->run(idr::make_initialize(m.get(), g.get(), &stop_status));
 
     std::cout << "initialized M. M is: \n";
     for (auto i = 0; i < m->get_size()[0]; i++) {
@@ -264,10 +264,12 @@ void Idr<ValueType>::apply_impl(const LinOp *b, LinOp *x) const
 
         t->compute_dot(residual.get(), omega.get());
         t->compute_norm2(t_norm.get());
+        t->compute_dot(t.get(), tht.get());
         residual->compute_norm2(residual_norm.get());
 
-        exec->run(idr::make_compute_omega(
-            kappa_, t_norm.get(), residual_norm.get(), rho.get(), omega.get()));
+        exec->run(idr::make_compute_omega(kappa_, tht.get(), t_norm.get(),
+                                          residual_norm.get(), rho.get(),
+                                          omega.get(), &stop_status));
 
         t->scale(neg_one_op.get());
         residual->add_scaled(omega.get(), t.get());
